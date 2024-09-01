@@ -26,7 +26,7 @@ router.get('/', (req, res) => {
             return res.status(500).send('Internal Server Error');
         }
         
-        db.query('SELECT * FROM groups', (err, groupResults) => {
+        db.query('SELECT * FROM `groups`', (err, groupResults) => {
             if (err) {
                 console.error('Database query error:', err);
                 return res.status(500).send('Internal Server Error');
@@ -87,7 +87,7 @@ router.get('/edit/:id', (req, res) => {
         if (marketplaceResults.length > 0) {
             const item = marketplaceResults[0];
             
-            db.query('SELECT * FROM groups', (err, groupResults) => {
+            db.query('SELECT * FROM `groups`', (err, groupResults) => {
                 if (err) {
                     console.error('Database query error:', err);
                     return res.status(500).send('Internal Server Error');

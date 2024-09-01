@@ -1,149 +1,186 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
-const db = require('../config/dbp');
 const router = express.Router();
+const db = require('../config/db');  // Ensure this path is correct
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+const bcrypt = require('bcrypt');
+const multer = require('multer');
 
-
-
-
-const SECRET_KEY = 'salttogetinmal'; // Replace with a secure secret key
-
-// Nodemailer setup
+// Setup email transport using Nodemailer
 const transporter = nodemailer.createTransport({
-    service: 'Gmail', // Replace with your email provider
+    service: 'Gmail',  // or another email service provider
     auth: {
         user: 'rs707406@gmail.com', // Replace with your email
         pass: 'mfoguxfbmnlvgteb'   // Replace with your email password
     }
 });
-// Email Signup API
-router.post('/signup/email', async (req, res) => {
-    const { email } = req.body;
-    
-    try {
-        // Check if email already exists
-        const [rows] = await db.query('SELECT * FROM login WHERE email = ?', [email]);
-        if (rows.length > 0) {
-            return res.status(400).json({ error: 'Email already in use' });
-        }
 
-        // Generate a verification token
-        const token = jwt.sign({ email }, SECRET_KEY, { expiresIn: '1h' });
 
-        // Insert email into the database (without verification)
-        await db.query('INSERT INTO login (email, email_verified) VALUES (?, ?)', [email, false]);
 
-        // Construct verification URL
-        const verificationUrl = `http://localhost:3000/api/auth/verify-email?token=${token}`;
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));  // Append the file extension
+    }
+});
 
-        // Send verification email
-        await transporter.sendMail({
-            from: '"Your App Name" <your-email@gmail.com>', // sender address
-            to: email, // list of receivers
-            subject: 'Email Verification', // Subject line
-            text: `Please verify your email by clicking the following link: ${verificationUrl}`, // plain text body
-            html: `<p>Please verify your email by clicking the following link: <a href="${verificationUrl}">${verificationUrl}</a></p>` // html body
+const upload = multer({ storage: storage });
+
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists 
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists 
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists 
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists 
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists 
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists 
+router.post('/checkemail', (req, res) => {
+    const { email } = req.body; 
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const query = 'SELECT COUNT(*) AS count FROM login WHERE email = ?';
+    db.query(query, [email], (err, results) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        const emailExists = results[0].count > 0;
+        res.json({ success: true, exists: emailExists, message: emailExists ? 'Email exists' : 'Email does not exist' });
+    });
+});
+
+// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up
+// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up
+// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up
+// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up// Sign up
+router.post('/signup', (req, res) => {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+        return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
+    // Check if email exists
+    const checkEmailQuery = 'SELECT COUNT(*) AS count FROM login WHERE email = ?';
+    db.query(checkEmailQuery, [email], (err, results) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        if (results[0].count > 0) return res.status(400).json({ success: false, message: 'Email already in use' });
+
+        // Hash password
+        bcrypt.hash(password, 10, (err, hashedPassword) => {
+            if (err) return res.status(500).json({ success: false, message: 'Error hashing password' });
+
+            // Insert new user
+            const insertQuery = 'INSERT INTO login (name, email, password, email_verified, created_at) VALUES (?, ?, ?, ?, ?)';
+            const emailVerified = false;  // Email not verified initially
+            const createdAt = new Date();
+
+            db.query(insertQuery, [name, email, hashedPassword, emailVerified, createdAt], (err, results) => {
+                if (err) return res.status(500).json({ success: false, message: 'Database error' });
+
+                // Send verification email
+                const token = crypto.randomBytes(20).toString('hex');
+                const verificationUrl = `http://localhost:4000/api/verify-email/${token}`;
+
+                const mailOptions = {
+                    from: 'your-email@gmail.com',
+                    to: email,
+                    subject: 'Account Verification',
+                    text: `Please verify your account by clicking the link: ${verificationUrl}`
+                };
+
+                transporter.sendMail(mailOptions, (err, info) => {
+                    if (err) return res.status(500).json({ success: false, message: 'Error sending email' });
+
+                    res.json({ success: true, message: 'Signup successful, please check your email to verify your account' });
+                });
+
+                // Store token in the database (implement this part as needed)
+            });
         });
-
-        res.status(200).json({ message: 'Verification email sent' });
-    } catch (error) {
-        console.error('Error during email signup:', error.message);
-        console.error(error.stack);
-        res.status(500).json({ error: 'An error occurred. Please try again.' });
-    }
+    });
 });
 
+// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email
+// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email
+// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email
+// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email// Verify email
+router.get('/verify-email/:token', (req, res) => {
+    const token = req.params.token;
 
-// Email Verification API
-router.get('/verify-email', async (req, res) => {
-    const { token } = req.query;
+    // Validate token and update user email verification status
+    // Implement token validation and update query here
 
-    try {
-        // Verify the token
-        const decoded = jwt.verify(token, SECRET_KEY);
-        const email = decoded.email;
-
-        // Update the email_verified field in the database
-        await db.query('UPDATE login SET email_verified = ? WHERE email = ?', [true, email]);
-
-        res.status(200).json({ message: 'Email verified successfully' });
-    } catch (error) {
-        console.error('Email verification error:', error);
-        res.status(400).json({ error: 'Invalid or expired token' });
-    }
+    res.json({ success: true, message: 'Email verification successful!' });
 });
 
+// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login
+// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login
+// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login// Login
+router.post('/login', (req, res) => {
+    const { email, password } = req.body;
 
-
-// Username Signup API
-router.post('/signup/username', async (req, res) => {
-    const { username, password, confirmPassword } = req.body;
-
-    // Validate passwords match
-    if (password !== confirmPassword) {
-        return res.status(400).json({ error: 'Passwords do not match' });
+    if (!email || !password) {
+        return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    // Check if username is unique
-    const existingUser = await db.query('SELECT * FROM login WHERE username = ?', [username]);
-    if (existingUser.length > 0) {
-        return res.status(400).json({ error: 'Username already in use' });
+    const query = 'SELECT id, password FROM login WHERE email = ?';
+    db.query(query, [email], (err, results) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error' });
+        if (results.length === 0) return res.status(400).json({ success: false, message: 'Invalid email or password' });
+
+        const user = results[0];
+
+        // Compare passwords
+        bcrypt.compare(password, user.password, (err, isMatch) => {
+            if (err) return res.status(500).json({ success: false, message: 'Error comparing passwords' });
+            if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid email or password' });
+
+            // Successful login, return user id
+            res.json({ success: true, message: 'Login successful', userId: user.id });
+        });
+    });
+});
+
+
+
+
+
+
+
+
+// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API
+// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API
+// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API
+// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API
+// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API
+// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API
+
+router.post('/addgroup', upload.single('groupimage'), (req, res) => {
+    const { groupname, description } = req.body;
+
+    // Check if required fields are provided
+    if (!groupname || !description || !req.file) {
+        return res.status(400).json({ success: false, message: 'All fields (groupname, description, groupimage) are required' });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // File path for the uploaded image
+    const groupImagePath = `/uploads/${req.file.filename}`;
 
-    // Save the user
-    await db.query('INSERT INTO login (username, email, password) VALUES (?, ?, ?)', [username, null, hashedPassword]);
-    res.status(201).json({ message: 'User created successfully' });
+    // Insert group details into the database
+    const insertQuery = 'INSERT INTO groups (groupname, groupimage, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)';
+    const createdAt = new Date();
+    const updatedAt = createdAt;
+
+    db.query(insertQuery, [groupname, groupImagePath, description, createdAt, updatedAt], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: 'Database error' });
+        }
+        res.json({ success: true, message: 'Group inserted successfully', groupId: result.insertId });
+    });
 });
 
-// Login API
-router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-
-    // Find the user by email or username
-    const user = await db.query('SELECT * FROM login WHERE email = ? OR username = ?', [username, username]);
-    if (user.length === 0) {
-        return res.status(400).json({ error: 'Invalid username/email or password' });
-    }
-
-    // Check if the password matches
-    const isMatch = await bcrypt.compare(password, user[0].password);
-    if (!isMatch) {
-        return res.status(400).json({ error: 'Invalid username/email or password' });
-    }
-
-    // Return success response or token (if needed)
-    res.status(200).json({ message: 'Login successful' });
-});
-
-// Verify Email API (Placeholder for email verification logic)
-router.get('/verify-email', async (req, res) => {
-    const { email, token } = req.query;
-
-    // Verify the token and update email_verified in the database
-    // ...
-
-    res.status(200).json({ message: 'Email verified successfully' });
-});
-
-// Google Sign-Up API (using Clerk)
-router.post('/signup/google', (req, res) => {
-    // Implement Google OAuth logic here
-    // ...
-
-    res.status(200).json({ message: 'Google signup successful' });
-});
-
-// Wallet Sign-Up API (using Clerk + MetaMask)
-router.post('/signup/wallet', (req, res) => {
-    // Implement MetaMask wallet sign-up logic here
-    // ...
-
-    res.status(200).json({ message: 'Wallet signup successful' });
-});
 
 module.exports = router;

@@ -20,7 +20,7 @@
         if (!req.session.userId) {
             return res.redirect('/');
         }
-        db.query('SELECT * FROM groups', (err, results) => {
+        db.query('SELECT * FROM `groups`', (err, results) => {
             if (err) throw err;
             res.render('groups', { 
                 groups: results,
@@ -37,7 +37,7 @@
         const { groupname } = req.body;
         const groupimage = req.file ? req.file.filename : null;
 
-        db.query('INSERT INTO groups (groupname, groupimage) VALUES (?, ?)', [groupname, groupimage], (err, result) => {
+        db.query('INSERT INTO `groups` (groupname, groupimage) VALUES (?, ?)', [groupname, groupimage], (err, result) => {
             if (err) throw err;
             res.redirect('/groups');
         });
@@ -83,7 +83,7 @@
 
         console.log('Final Group Image:', groupimage);
 
-        db.query('UPDATE groups SET groupname = ?, groupimage = ? WHERE id = ?', [groupname, groupimage, id], (err, result) => {
+        db.query('UPDATE `groups` SET groupname = ?, groupimage = ? WHERE id = ?', [groupname, groupimage, id], (err, result) => {
             if (err) {
                 console.error('Error updating group:', err);
                 return res.status(500).send('Internal Server Error');
@@ -97,7 +97,7 @@
     router.get('/delete/:id', (req, res) => {
         const { id } = req.params;
 
-        db.query('DELETE FROM groups WHERE id = ?', [id], (err, result) => {
+        db.query('DELETE FROM `groups` WHERE id = ?', [id], (err, result) => {
             if (err) throw err;
             res.redirect('/groups');
         });

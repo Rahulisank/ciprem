@@ -7,9 +7,14 @@ const db = require('./config/db');  // Ensure this path is correct
 const app = express();
 
 // Set up middleware
+
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());  // Add this line to handle raw JSON data
+
+
+
 app.use(session({
-    secret: 'your_secret_key',  // Replace with a secure secret key
+    secret: 'bgbsdfgbsdbadfba',  // Replace with a secure secret key
     resave: false,
     saveUninitialized: true
 }));
@@ -29,7 +34,7 @@ app.use('/groups', require('./routes/groups'));  // CRUD operations for groups
 app.use('/blockchain', require('./routes/blockchain'));  // CRUD operations for blockchain
 app.use('/categories', require('./routes/category'));  // CRUD operations for categories
 app.use('/marketplace', require('./routes/marketplace'));
-app.use('/api/auth', require('./routes/authApi'));
+app.use('/api', require('./routes/authApi'));
 
 
 // Error handling middleware (optional but recommended)
@@ -43,6 +48,6 @@ app.use((err, req, res, next) => {
 });
 
 // Start the server
-app.listen(3000, () => {
-    console.log('Server started on http://localhost:3000');
+app.listen(4000, () => {
+    console.log('Server started on http://localhost:4000');
 });
