@@ -313,7 +313,59 @@ router.delete("/deletegroup/:id", (req, res) => {
 });
 
 
+
+
+
+
+
+
+
+router.post("/singlegroup", (req, res) => {
+  // Get base URL from environment variables
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
+  // Extract the group ID from the request body
+  const { id } = req.body;
+
+  // Validate the ID
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Group ID is required" });
+  }
+
+  // Query to retrieve a single group by its ID
+  const selectQuery = "SELECT * FROM `groups` WHERE id = ?";
+
+  db.query(selectQuery, [id], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    // Check if the group was found
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    // Assuming results[0] is the group object
+    const group = results[0];
+
+    // Update the groupimage field with the full URL
+    group.groupimage = `${baseUrl}${group.groupimage}`;
+
+    res.json({
+      success: true,
+      group: group,
+    });
+  });
+});
+
+
+
+
 router.post("/allgroups", (req, res) => {
+  // Get base URL from environment variables
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
   // Query to retrieve all groups from the database
   const selectQuery = "SELECT * FROM `groups`";
 
@@ -323,9 +375,15 @@ router.post("/allgroups", (req, res) => {
       return res.status(500).json({ success: false, message: "Database error" });
     }
 
+    // Map over results to update the groupimage field with the full URL
+    const updatedResults = results.map(group => ({
+      ...group,
+      groupimage: `${baseUrl}${group.groupimage}`
+    }));
+
     res.json({
       success: true,
-      groups: results,
+      groups: updatedResults,
     });
   });
 });
@@ -468,11 +526,80 @@ router.post("/leavegroup", (req, res) => {
 
 
 
+
+router.post("/singlepost", (req, res) => {
+  // Get base URL from environment variables
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
+  // Extract the post ID from the request body
+  const { id } = req.body;
+
+  // Validate the ID
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Post ID is required" });
+  }
+
+  // Query to retrieve a single post by its ID
+  const selectQuery = "SELECT * FROM `posts` WHERE id = ?";
+
+  db.query(selectQuery, [id], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    // Check if the post was found
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, message: "Post not found" });
+    }
+
+    // Assuming results[0] is the post object
+    const post = results[0];
+
+    // Update the image field with the full URL
+    post.image = `${baseUrl}${post.image}`;
+
+    res.json({
+      success: true,
+      post: post,
+    });
+  });
+});
+
+
+router.post("/allpost", (req, res) => {
+  // Get base URL from environment variables
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
+  // Query to retrieve all groups from the database
+  const selectQuery = "SELECT * FROM `posts`";
+
+  db.query(selectQuery, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    // Map over results to update the groupimage field with the full URL
+    const updatedResults = results.map(post => ({
+      ...post,
+      image: `${baseUrl}${post.image}`
+    }));
+
+    res.json({
+      success: true,
+      posts: updatedResults,
+    });
+  });
+});
+
+
+
 router.post("/addpost", upload.single("image"), (req, res) => {
   const { groupid, userid, title, description, tags, matured } = req.body;
 
   // Validate input
-  if (!groupid || !userid || !title || !description || !matured) {
+  if (!groupid || !userid || !title || !description) {
     return res.status(400).json({
       success: false,
       message: "groupid, userid, title, description, and matured fields are required",
@@ -482,19 +609,21 @@ router.post("/addpost", upload.single("image"), (req, res) => {
   // Image handling
   const image = req.file ? req.file.filename : null;
 
+  // Format tags as a comma-separated string
+  const tagsString = tags ? tags.split(',').map(tag => tag.trim()).join(',') : null;
+
   // Insert query
   const insertQuery = `
     INSERT INTO posts (groupid, userid, title, description, image, tags, matured, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  const tagsJson = tags ? JSON.stringify(tags) : null;
   const createdAt = new Date();
   const updatedAt = createdAt;
 
   db.query(
     insertQuery,
-    [groupid, userid, title, description, image, tagsJson, matured, createdAt, updatedAt],
+    [groupid, userid, title, description, image, tagsString, matured, createdAt, updatedAt],
     (err, result) => {
       if (err) {
         console.error(err);
@@ -512,13 +641,11 @@ router.post("/addpost", upload.single("image"), (req, res) => {
 
 
 
-
-
 router.post("/updatepost", upload.single("image"), (req, res) => {
   const { id, groupid, userid, title, description, tags, matured } = req.body;
 
   // Validate input
-  if (!id || !groupid || !userid || !title || !description || !matured) {
+  if (!id || !groupid || !userid || !title || !description || matured === undefined) {
     return res.status(400).json({
       success: false,
       message: "id, groupid, userid, title, description, and matured fields are required",
@@ -528,6 +655,9 @@ router.post("/updatepost", upload.single("image"), (req, res) => {
   // Image handling
   const image = req.file ? req.file.filename : null;
 
+  // Format tags as a comma-separated string
+  const tagsString = tags ? tags.split(',').map(tag => tag.trim()).join(',') : null;
+
   // Update query
   const updateQuery = `
     UPDATE posts 
@@ -535,12 +665,11 @@ router.post("/updatepost", upload.single("image"), (req, res) => {
     WHERE id = ?
   `;
 
-  const tagsJson = tags ? JSON.stringify(tags) : null;
   const updatedAt = new Date();
 
   db.query(
     updateQuery,
-    [groupid, userid, title, description, image, tagsJson, matured, updatedAt, id],
+    [groupid, userid, title, description, image, tagsString, matured, updatedAt, id],
     (err, result) => {
       if (err) {
         console.error(err);
@@ -558,6 +687,7 @@ router.post("/updatepost", upload.single("image"), (req, res) => {
     }
   );
 });
+
 
 
 
