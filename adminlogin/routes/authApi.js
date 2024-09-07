@@ -390,6 +390,41 @@ router.post("/allgroups", (req, res) => {
 
 
 
+router.post("/mygroups", (req, res) => {
+  // Extract user ID from the request body
+  const { userid } = req.body;
+
+  // Validate user ID
+  if (!userid) {
+    return res.status(400).json({ success: false, message: "User ID is required" });
+  }
+
+  // Get base URL from environment variables
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
+  // Query to retrieve groups where the user ID matches
+  const selectQuery = "SELECT * FROM `groups` WHERE `userid` = ?";
+
+  db.query(selectQuery, [userid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    // Map over results to update the groupimage field with the full URL
+    const updatedResults = results.map(group => ({
+      ...group,
+      groupimage: group.groupimage ? `${baseUrl}${group.groupimage}` : ''
+    }));
+
+    res.json({
+      success: true,
+      groups: updatedResults,
+    });
+  });
+});
+
+
 
 
 
@@ -411,35 +446,34 @@ router.post("/allgroups", (req, res) => {
 
 
 router.post("/joinedgroups", (req, res) => {
-  const { userid } = req.body;
+    const { userid } = req.body;
 
-  // Validate if userid is provided
-  if (!userid) {
-    return res.status(400).json({
-      success: false,
-      message: "userid is required",
-    });
-  }
-
-  // Query to retrieve all groups joined by a specific user
-  const selectQuery = `
-    SELECT j.id, j.userid, j.groupid, j.joinedon, g.groupname,g.matured, g.description 
-    FROM joined_groups j
-    INNER JOIN groups g ON j.groupid = g.id
-    WHERE j.userid = ?
-  `;
-
-  db.query(selectQuery, [userid], (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, message: "Database error" });
+    // Validate if userid is provided
+    if (!userid) {
+      return res.status(400).json({
+        success: false,
+        message: "userid is required",
+      });
     }
 
-    res.json({
-      success: true,
-      joinedGroups: results,
+    // Query to retrieve all groups joined by a specific user
+    const selectQuery = `
+      SELECT j.id, j.userid, j.groupid, j.joinedon, g.groupname,g.matured, g.description 
+      FROM joined_groups j
+      INNER JOIN groups g ON j.groupid = g.id
+      WHERE j.userid = ?
+    `;
+
+    db.query(selectQuery, [userid], (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, message: "Database error" });
+      } 
+      res.json({
+        success: true,
+        joinedGroups: results,
+      });
     });
-  });
 });
 
 
@@ -585,7 +619,7 @@ router.post("/allpost", (req, res) => {
     ...post,
     image: post.image ? `${baseUrl}${post.image}` : '' // Ensure `post.image` is correctly handled
   }));
-  
+
     res.json({
       success: true,
       posts: updatedResults,
@@ -596,8 +630,7 @@ router.post("/allpost", (req, res) => {
 
 
 router.post("/addpost", upload.single("image"), (req, res) => {
-  const { groupid, userid, title, description, tags, matured } = req.body;
-
+  const { groupid, userid, title, description, tags, matured } = req.body; 
   // Validate input
   if (!groupid || !userid || !title || !description) {
     return res.status(400).json({
