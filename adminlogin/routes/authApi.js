@@ -583,7 +583,7 @@ router.post("/allpost", (req, res) => {
     // Map over results to update the groupimage field with the full URL
     const updatedResults = results.map(post => ({
       ...post,
-      image:group.image ? `${baseUrl}${group.image}` : ''
+      image:post.image ? `${baseUrl}${post.image}` : ''
     }));
 
     res.json({
