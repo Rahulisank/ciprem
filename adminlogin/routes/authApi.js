@@ -350,8 +350,8 @@ router.post("/singlegroup", (req, res) => {
     const group = results[0];
 
     // Update the groupimage field with the full URL
-    group.groupimage = `${baseUrl}${group.groupimage}`;
-
+  
+    group.groupimage = group.groupimage ? `${baseUrl}${group.groupimage}` : '';
     res.json({
       success: true,
       group: group,
@@ -378,7 +378,7 @@ router.post("/allgroups", (req, res) => {
     // Map over results to update the groupimage field with the full URL
     const updatedResults = results.map(group => ({
       ...group,
-      groupimage: `${baseUrl}${group.groupimage}`
+      groupimage: group.groupimage ? `${baseUrl}${group.groupimage}` : ''
     }));
 
     res.json({
@@ -556,8 +556,8 @@ router.post("/singlepost", (req, res) => {
     // Assuming results[0] is the post object
     const post = results[0];
 
-    // Update the image field with the full URL
-    post.image = `${baseUrl}${post.image}`;
+    // Update the image field with the full URL 
+    post.image = group.image ? `${baseUrl}${post.image}` : '';
 
     res.json({
       success: true,
@@ -583,7 +583,7 @@ router.post("/allpost", (req, res) => {
     // Map over results to update the groupimage field with the full URL
     const updatedResults = results.map(post => ({
       ...post,
-      image: `${baseUrl}${post.image}`
+      image:group.image ? `${baseUrl}${group.image}` : ''
     }));
 
     res.json({
