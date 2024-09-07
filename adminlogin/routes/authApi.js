@@ -557,7 +557,7 @@ router.post("/singlepost", (req, res) => {
     const post = results[0];
 
     // Update the image field with the full URL 
-    post.image = group.image ? `${baseUrl}${post.image}` : '';
+    post.image = post.image ? `${baseUrl}${post.image}` : '';
 
     res.json({
       success: true,
@@ -580,12 +580,12 @@ router.post("/allpost", (req, res) => {
       return res.status(500).json({ success: false, message: "Database error" });
     }
 
-    // Map over results to update the groupimage field with the full URL
-    const updatedResults = results.map(post => ({
-      ...post,
-      image:post.image ? `${baseUrl}${post.image}` : ''
-    }));
-
+  // Map over results to update the image field with the full URL
+  const updatedResults = results.map(post => ({
+    ...post,
+    image: post.image ? `${baseUrl}${post.image}` : '' // Ensure `post.image` is correctly handled
+  }));
+  
     res.json({
       success: true,
       posts: updatedResults,
