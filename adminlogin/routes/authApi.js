@@ -281,8 +281,8 @@ router.post("/editgroup", upload.single("groupimage"), (req, res) => {
 
 
 
-router.delete("/deletegroup/:id", (req, res) => {
-  const groupId = req.params.id;
+router.post("/deletegroup", (req, res) => {
+  const { groupId } = req.body; // Extract groupId from req.body
 
   // Validate groupId
   if (!groupId) {
@@ -311,6 +311,7 @@ router.delete("/deletegroup/:id", (req, res) => {
     });
   });
 });
+
 
 
 
@@ -362,31 +363,6 @@ router.post("/singlegroup", (req, res) => {
 
 
 
-router.post("/allgroups", (req, res) => {
-  // Get base URL from environment variables
-  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
-
-  // Query to retrieve all groups from the database
-  const selectQuery = "SELECT * FROM `groups`";
-
-  db.query(selectQuery, (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, message: "Database error" });
-    }
-
-    // Map over results to update the groupimage field with the full URL
-    const updatedResults = results.map(group => ({
-      ...group,
-      groupimage: group.groupimage ? `${baseUrl}${group.groupimage}` : ''
-    }));
-
-    res.json({
-      success: true,
-      groups: updatedResults,
-    });
-  });
-});
 
 
 
@@ -427,6 +403,31 @@ router.post("/mygroups", (req, res) => {
 
 
 
+router.post("/allgroups", (req, res) => {
+  // Get base URL from environment variables
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
+  // Query to retrieve all groups from the database
+  const selectQuery = "SELECT * FROM `groups`";
+
+  db.query(selectQuery, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    // Map over results to update the groupimage field with the full URL
+    const updatedResults = results.map(group => ({
+      ...group,
+      groupimage: group.groupimage ? `${baseUrl}${group.groupimage}` : ''
+    }));
+
+    res.json({
+      success: true,
+      groups: updatedResults,
+    });
+  });
+});
 
 
 
@@ -436,7 +437,6 @@ router.post("/mygroups", (req, res) => {
 // Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API
 // Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API
 // Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API// Insert Group API
-
 
 
 
@@ -446,35 +446,46 @@ router.post("/mygroups", (req, res) => {
 
 
 router.post("/joinedgroups", (req, res) => {
-    const { userid } = req.body;
+  const { userid } = req.body;
 
-    // Validate if userid is provided
-    if (!userid) {
-      return res.status(400).json({
-        success: false,
-        message: "userid is required",
-      });
+  // Validate if userid is provided
+  if (!userid) {
+    return res.status(400).json({
+      success: false,
+      message: "userid is required",
+    });
+  }
+
+  // Define the base URL for the group images
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
+  // Query to retrieve all groups joined by a specific user
+  const selectQuery = `
+    SELECT j.id, j.userid, j.groupid, j.joinedon, g.groupname, g.matured, g.description, g.groupimage , g.members , g.posts 
+    FROM joined_groups j
+    INNER JOIN \`groups\` g ON j.groupid = g.id
+    WHERE j.userid = ?
+  `;
+
+  db.query(selectQuery, [userid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
     }
 
-    // Query to retrieve all groups joined by a specific user
-    const selectQuery = `
-      SELECT j.id, j.userid, j.groupid, j.joinedon, g.groupname,g.matured, g.description 
-      FROM joined_groups j
-      INNER JOIN  \`groups\`  g ON j.groupid = g.id
-      WHERE j.userid = ?
-    `;
+    // Map over results to update the groupimage field with the full URL
+    const updatedResults = results.map(group => ({
+      ...group,
+      groupimage: group.groupimage ? `${baseUrl}${group.groupimage}` : ''
+    }));
 
-    db.query(selectQuery, [userid], (err, results) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ success: false, message: "Database error" });
-      } 
-      res.json({
-        success: true,
-        joinedGroups: results,
-      });
+    res.json({
+      success: true,
+      joinedGroups: updatedResults,
     });
+  });
 });
+
 
 
 
