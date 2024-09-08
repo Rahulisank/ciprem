@@ -460,7 +460,7 @@ router.post("/joinedgroups", (req, res) => {
     const selectQuery = `
       SELECT j.id, j.userid, j.groupid, j.joinedon, g.groupname,g.matured, g.description 
       FROM joined_groups j
-      INNER JOIN groups g ON j.groupid = g.id
+      INNER JOIN  \`groups\`  g ON j.groupid = g.id
       WHERE j.userid = ?
     `;
 
