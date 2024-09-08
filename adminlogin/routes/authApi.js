@@ -628,9 +628,9 @@ router.post("/allpost", (req, res) => {
 });
 
 
-
 router.post("/addpost", upload.single("image"), (req, res) => {
   const { groupid, userid, title, description, tags, matured } = req.body; 
+
   // Validate input
   if (!groupid || !userid || !title || !description) {
     return res.status(400).json({
@@ -643,7 +643,9 @@ router.post("/addpost", upload.single("image"), (req, res) => {
   const image = req.file ? req.file.filename : null;
 
   // Format tags as a comma-separated string
-  const tagsString = tags ? tags.split(',').map(tag => tag.trim()).join(',') : null;
+  // Assuming tags is sent as an array in the request body
+  const tagsArray = Array.isArray(tags) ? tags.map(tag => tag.trim()) : [];
+  const tagsString = tagsArray.length > 0 ? tagsArray.join(',') : null;
 
   // Insert query
   const insertQuery = `
@@ -670,6 +672,7 @@ router.post("/addpost", upload.single("image"), (req, res) => {
     }
   );
 });
+
 
 
 
