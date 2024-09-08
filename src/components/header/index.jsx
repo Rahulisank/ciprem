@@ -1,9 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { cn } from "@/lib/utils";
-import { Bell, MessageSquareText, Search, X } from "lucide-react";
+import { Bell, LogOut, MessageSquareText, Search, X } from "lucide-react";
 
 import Login from "@/auth/Login";
 import SignUp from "@/auth/SignUp";
@@ -19,11 +19,27 @@ import { useEffect, useState } from "react";
 import Notificaton from "./Notificaton";
 import Image from "next/image";
 import { ASSETS } from "@/assets";
+import { useToken } from "@/lib/useToken";
+import { useAuth } from "@/lib/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
+import { updateUserAuth } from "@/redux/slices/AuthSlice";
 
 const Header = () => {
   // Get the current pathname from the URL
   const pathname = usePathname();
 
+  const { getAuth, removeAuth } = useAuth();
+  const { getToken, removeToken } = useToken();
+  const userDetails = getAuth();
+  const userToken = getToken();
+
+  const userId = useSelector((state) => state.AuthSlice);
   const [searchBar, setSearchBar] = useState(false);
 
   // Redux dispatch function to dispatch actions
@@ -50,6 +66,23 @@ const Header = () => {
       window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [prevScrollPos]);
+
+  useEffect(() => {
+    if (userToken) {
+      dispatch(
+        updateUserAuth({
+          userId: userToken,
+          userDetails: userDetails && JSON.parse(userDetails),
+        }),
+      );
+    }
+  }, [userToken, userDetails]);
+
+  const handleLogout = () => {
+    removeAuth();
+    removeToken();
+    window.location.reload();
+  };
 
   return (
     <>
@@ -141,13 +174,34 @@ const Header = () => {
                 <Notificaton />
               </Popover>
 
-              <CTAButton
-                onClick={() => {
-                  dispatch(updateModalState("openLoginModal"));
-                }}
-              >
-                Login
-              </CTAButton>
+              {userId?.userId ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Image
+                      src={require("@/assets/images/avatar.png")}
+                      alt="avatar"
+                      className="w-7 cursor-pointer rounded-full"
+                    />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      className={cn("flex cursor-pointer gap-2 text-red-500")}
+                      onClick={handleLogout}
+                    >
+                      <LogOut />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <CTAButton
+                  onClick={() => {
+                    dispatch(updateModalState("openLoginModal"));
+                  }}
+                >
+                  Login
+                </CTAButton>
+              )}
             </div>
           </div>
         </div>

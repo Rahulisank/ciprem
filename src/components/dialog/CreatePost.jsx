@@ -23,7 +23,7 @@ import { SelectContent, SelectItem, SelectLabel } from "../ui/select";
 import { CTAButton, CustomInput } from "..";
 import { Checkbox } from "../ui/checkbox";
 import { ScrollArea } from "../ui/scroll-area";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { createPostSchema } from "@/validation/createPost";
 import Image from "next/image";
@@ -35,6 +35,7 @@ const CreatePost = () => {
   // Redux dispatch function to dispatch actions
   const dispatch = useDispatch();
   const [isMaturedContent, setIsMaturedContent] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
   // Initialize the form with default values
   const form = useForm({
     defaultValues: {
@@ -42,6 +43,7 @@ const CreatePost = () => {
       title: "",
       text: "",
       hashtags: [],
+      image: "",
     },
     resolver: yupResolver(createPostSchema),
   });
@@ -51,13 +53,20 @@ const CreatePost = () => {
     name: "hashtags",
   });
 
+  // preview uploaded image
+  const previewUploadedImage = (e) => {
+    setPreviewImage("");
+    if (e.target.files && e.target.files[0]) {
+      const uploadedImage = URL.createObjectURL(e.target.files[0]);
+      setPreviewImage(uploadedImage);
+    }
+  };
+
   // Handle form submission
   const onSubmit = (data) => {
     console.log(data);
     console.log(isMaturedContent);
   };
-
-  const fileInputRef = useRef(null);
 
   const handleFileClick = () => {
     const fileInput = document.getElementById("file");
@@ -72,6 +81,7 @@ const CreatePost = () => {
       onOpenChange={() => {
         dispatch(closeModal("openCreatePostModal"));
         form.reset();
+        setPreviewImage("");
       }}
     >
       <AlertDialogContent
@@ -119,7 +129,6 @@ const CreatePost = () => {
                         }}
                       >
                         <SelectContent className="relative top-3 rounded-xl border-blue-gray bg-blue-gray px-5 py-4 text-white">
-                          {/* <SelectLabel>Choose Groups</SelectLabel> */}
                           <div className="relative mb-8">
                             <CustomInput
                               placeholder="Search"
@@ -130,7 +139,7 @@ const CreatePost = () => {
                             </button>
                           </div>
 
-                          {new Array(1).fill(true).map((_,i) => {
+                          {new Array(1).fill(true).map((_, i) => {
                             return (
                               <SelectItem
                                 value="test"
@@ -175,6 +184,13 @@ const CreatePost = () => {
                   <ImagePlus /> <span className="text-base">GIF</span>
                 </div>
               </div>
+              {previewImage && (
+                <img
+                  src={previewImage}
+                  alt="uploaded image"
+                  className="w-full max-w-24"
+                />
+              )}
               <div className="hidden">
                 <input
                   name="title"
@@ -182,6 +198,9 @@ const CreatePost = () => {
                   placeholder="Title"
                   id="file"
                   // accept=".png,.jpg,.jpeg,.gif"
+                  {...form.register("image", {
+                    onChange: previewUploadedImage,
+                  })}
                 />
               </div>
               {fields?.length >= 1 && (

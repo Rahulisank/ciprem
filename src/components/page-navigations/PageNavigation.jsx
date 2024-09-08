@@ -15,9 +15,9 @@ const Navigation = ({ menus, onButtonClick, buttonLabel, activeDrawer }) => {
         <div className="flex gap-2">
           {menus?.map((menu, i) => (
             <Link
-              className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm capitalize text-white transition-all duration-200 hover:bg-slate-gray xl:px-4 xl:py-3 xl:text-[15px] 2xl:text-base 4xl:text-lg ${query === menu?.toLowerCase() ? "!bg-[rgba(3,68,49,20%)] !text-shiny-blue" : ""} `}
+              className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm capitalize text-white transition-all duration-200 hover:bg-slate-gray xl:px-4 xl:py-3 xl:text-[15px] 2xl:text-base 4xl:text-lg ${query === menu?.toLowerCase()?.replaceAll(" ", "-") ? "!bg-[rgba(3,68,49,20%)] !text-shiny-blue" : ""} `}
               key={i}
-              href={`${pathname}/?type=${menu.toLowerCase()}`}
+              href={`${pathname}/?type=${menu.toLowerCase()?.replaceAll(" ", "-")}`}
             >
               {menu}
             </Link>

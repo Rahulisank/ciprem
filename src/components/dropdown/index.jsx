@@ -21,7 +21,11 @@ const Dropdown = (props) => {
       >
         {props.dropdownMenu?.map((menu, i) => {
           return (
-            <Link key={i} href={menu.link}>
+            <Link
+              key={i}
+              onClick={menu.onClick && menu.onClick}
+              href={menu.link ? menu.link : "#"}
+            >
               <DropdownMenuLabel className="my-1 rounded-md border-none capitalize transition-all hover:bg-white hover:text-dark-slate hover:outline-none">
                 {menu.name}
               </DropdownMenuLabel>

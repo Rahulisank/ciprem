@@ -8,9 +8,12 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { OutlineButton } from "..";
+import { CreateGroup, OutlineButton } from "..";
+import { useDispatch } from "react-redux";
+import { updateModalState } from "@/redux/slices/ModalSlice";
 
 const MyGroups = () => {
+  const dispatch = useDispatch();
   return (
     <Card className="rounded-2xl border-none bg-transparent p-5 outline-none xl:bg-slate-gray xl:p-6 2xl:p-7 3xl:p-8 4xl:p-9">
       <CardHeader className="p-0">
@@ -45,8 +48,14 @@ const MyGroups = () => {
         })}
       </div>
       <CardFooter className="px-0 pb-0 pt-6 4xl:pt-10">
-        <OutlineButton className={"w-full"}>Create Group</OutlineButton>
+        <OutlineButton
+          onClick={() => dispatch(updateModalState("openCreateGroupModal"))}
+          className={"w-full"}
+        >
+          Create Group
+        </OutlineButton>
       </CardFooter>
+      <CreateGroup />
     </Card>
   );
 };

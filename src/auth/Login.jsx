@@ -24,11 +24,20 @@ import FormInput from "../components/input/FormInput";
 import GoogleLogin from "./GoogleLogin";
 import WalletLogin from "./WalletLogin";
 import { signInSchema } from "@/validation/auth";
+import { useLoginMutation } from "@/redux/api";
+import { ButtonLoader } from "@/components/loader/ButtonLoader";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/useAuth";
+import { useToken } from "@/lib/useToken";
 
 const Login = () => {
+  const { toast } = useToast();
+  const { setToken } = useToken();
+  const { setAuth } = useAuth();
+  const [login, { isLoading, isError }] = useLoginMutation();
+
   // Local state to manage password visibility
   const [passwordVisible, setPasswordVisible] = useState(false);
-
   // Access the auth dialog state from the Redux store
   const authDialogState = useSelector((state) => state.ModalSlice);
 
@@ -45,8 +54,30 @@ const Login = () => {
   });
 
   // Handle form submission
-  const onSubmit = (data) => {
-    console.log(data);
+  const onSubmit = async (data) => {
+    const response = await login({
+      email: data.identifier,
+      password: data.password,
+    });
+    if (response?.data?.success) {
+      form.reset();
+      toast({
+        title: response?.data?.message
+          ? response?.data?.message
+          : "Login successful",
+      });
+      setToken(response?.data?.userId);
+      setAuth(response?.data);
+      dispatch(closeModal("openLoginModal"));
+    }
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: response?.error?.data?.message
+          ? response?.error?.data?.message
+          : "Something went wrong! Please try again later",
+      });
+    }
   };
 
   return (
@@ -130,8 +161,17 @@ const Login = () => {
               </AlertDialogDescription>
             </div>
             {/* Login button */}
-            <button className="mt-5 w-full rounded-full bg-shiny-blue p-3 text-sm font-semibold text-dark-slate hover:bg-[#21ffdb] md:mt-6 md:text-base xl:mt-7 3xl:mt-8 3xl:text-lg">
-              Log In
+            <button
+              disabled={isLoading}
+              className="mt-5 w-full rounded-full bg-shiny-blue p-3 text-sm font-semibold text-dark-slate hover:bg-[#21ffdb] md:mt-6 md:text-base xl:mt-7 3xl:mt-8 3xl:text-lg"
+            >
+              {isLoading ? (
+                <div className="flex justify-center">
+                  <ButtonLoader />
+                </div>
+              ) : (
+                "Log In"
+              )}
             </button>
           </form>
         </Form>

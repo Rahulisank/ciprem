@@ -1,6 +1,6 @@
 import * as yup from "yup";
 
 export const createGroupSchema = yup.object().shape({
-  title: yup.string().required("Title is required"),
-  text: yup.string().required("Text is required"),
+  groupName: yup.string().required("Group Name is required"),
+  description: yup.string().required("Description is required"),
 });

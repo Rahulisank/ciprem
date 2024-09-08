@@ -10,7 +10,7 @@ export const headerMenues = [
   {
     id: 2,
     icon: <Users />,
-    slug: "/groups?type=joined",
+    slug: "/groups?type=my-groups",
     name: "Groups",
   },
   {

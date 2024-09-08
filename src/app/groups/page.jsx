@@ -1,20 +1,67 @@
 "use client";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { CreateGroup, CustomInput, PageNavigation } from "@/components";
 import { updateModalState } from "@/redux/slices/ModalSlice";
 import { SelectContent, SelectItem, SelectLabel } from "@/components/ui/select";
 import SelectBox from "@/components/input/SelectBox";
 import { ArrowUpDown, Search } from "lucide-react";
 import GroupCard from "@/components/Cards/GroupCard";
+import {
+  useAllGroupQuery,
+  useJoinedGroupsQuery,
+  useMyGroupsQuery,
+} from "@/redux/api";
+import {
+  updateGroupsState,
+  updateJoinedGroupsState,
+  updateMyGroupsState,
+} from "@/redux/slices/GroupSlice";
 
 export default function Groups() {
   const dispatch = useDispatch();
+  const queryParams = useSearchParams();
+  const query = queryParams.get("type");
+
+  const groupsSlice = useSelector((state) => state.GroupSlice);
+  const userId = useSelector((state) => state.AuthSlice.userId);
+
+  const getAllGroups = useAllGroupQuery(1, { skip: query !== "all" });
+
+  const getAllJoinedGroups = useJoinedGroupsQuery(
+    { userid: userId },
+    {
+      skip: !query || query !== "joined" || !userId,
+    },
+  );
+
+  const myCreatedGroups = useMyGroupsQuery(
+    { userid: userId },
+    {
+      skip: !query || query !== "my-groups" || !userId,
+    },
+  );
+
+  useEffect(() => {
+    if (getAllGroups?.data) {
+      dispatch(updateGroupsState(getAllGroups?.data?.groups));
+    }
+
+    if (getAllJoinedGroups?.data) {
+      dispatch(updateJoinedGroupsState(getAllJoinedGroups?.data?.joinedGroups));
+    }
+
+    if (myCreatedGroups?.data) {
+      dispatch(updateMyGroupsState(myCreatedGroups?.data?.groups));
+    }
+  }, [getAllJoinedGroups?.data, myCreatedGroups?.data, getAllGroups?.data]);
 
   return (
     <>
       <PageNavigation
-        menus={["Joined", "All"]}
+        menus={["My Groups", "Joined", "All"]}
         onButtonClick={() => {
           dispatch(updateModalState("openCreateGroupModal"));
         }}
@@ -65,9 +112,20 @@ export default function Groups() {
         </form>
       </div>
       <div className="mb-20 grid grid-cols-1 gap-4 sm:grid-cols-[1fr,1fr] xl:mb-10 xl:gap-6 2xl:grid-cols-[1fr,1fr,1fr] 3xl:gap-8">
-        {new Array(9).fill(true).map((_, i) => (
-          <GroupCard key={i} />
-        ))}
+        {query === "my-groups" &&
+          groupsSlice?.myGroups?.map((group, i) => (
+            <GroupCard group={group} key={i} showDetailsButton={true} />
+          ))}
+
+        {query === "joined" &&
+          groupsSlice?.joinedGroups?.map((group, i) => (
+            <GroupCard group={group} key={i} />
+          ))}
+
+        {query === "all" &&
+          groupsSlice?.allGroups?.map((group, i) => (
+            <GroupCard group={group} key={i} />
+          ))}
       </div>
       <CreateGroup />
     </>

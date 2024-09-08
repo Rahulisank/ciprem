@@ -1,7 +1,7 @@
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 
-const CTAButton = ({ onClick, children, extra }) => {
+const CTAButton = ({ onClick, children, extra, disabled }) => {
   return (
     <Button
       variant="default"
@@ -10,6 +10,7 @@ const CTAButton = ({ onClick, children, extra }) => {
           extra,
       )}
       onClick={onClick}
+      disabled={disabled}
     >
       {children}
     </Button>

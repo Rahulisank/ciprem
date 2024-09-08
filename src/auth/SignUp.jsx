@@ -24,13 +24,23 @@ import WalletLogin from "./WalletLogin";
 import SignUpCredentials from "./SignUpCredentials";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signUpEmail } from "@/validation/auth";
+import { useCheckEmailMutation } from "@/redux/api";
+import { useToast } from "@/hooks/use-toast";
+import { ButtonLoader } from "@/components/loader/ButtonLoader";
+import { useState } from "react";
 
 const SignUp = () => {
+  const [email, setEmail] = useState("");
+
   // Access the auth dialog state from the Redux store
   const authDialogState = useSelector((state) => state.ModalSlice);
 
+  const { toast } = useToast();
+
   // Redux dispatch function to dispatch actions
   const dispatch = useDispatch();
+
+  const [checkEmail, { isLoading, isError }] = useCheckEmailMutation();
 
   // Initialize the form with default values
   const form = useForm({
@@ -41,10 +51,29 @@ const SignUp = () => {
   });
 
   // Handle form submission
-  const onSubmit = (data) => {
-    console.log(data);
-    form.reset();
-    dispatch(updateModalState("openSignUpCredentialsModal"));
+  const onSubmit = async (data) => {
+    const response = await checkEmail(data);
+    if (response?.data?.success) {
+      if (response?.data?.exists) {
+        toast({
+          variant: "destructive",
+          title: "Email Already exists! Please use different email",
+        });
+        return;
+      } else {
+        form.reset();
+        dispatch(updateModalState("openSignUpCredentialsModal"));
+        setEmail(data?.email);
+      }
+    }
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: response?.error?.data?.message
+          ? response?.error?.data?.message
+          : "Something went wrong! Please try again later",
+      });
+    }
   };
 
   return (
@@ -112,8 +141,17 @@ const SignUp = () => {
                 </AlertDialogDescription>
               </div>
               {/* Continue button */}
-              <button className="mt-5 w-full rounded-full bg-shiny-blue p-3 text-sm font-semibold text-dark-slate hover:bg-[#21ffdb] md:mt-6 md:text-base xl:mt-7 3xl:mt-8 3xl:text-lg">
-                Continue
+              <button
+                disabled={isLoading}
+                className="mt-5 w-full rounded-full bg-shiny-blue p-3 text-sm font-semibold text-dark-slate hover:bg-[#21ffdb] md:mt-6 md:text-base xl:mt-7 3xl:mt-8 3xl:text-lg"
+              >
+                {isLoading ? (
+                  <div className="flex justify-center">
+                    <ButtonLoader />
+                  </div>
+                ) : (
+                  "Continue"
+                )}
               </button>
             </form>
           </Form>
@@ -121,7 +159,7 @@ const SignUp = () => {
       </AlertDialog>
 
       {/* Sign Up Credentials Modal */}
-      <SignUpCredentials />
+      <SignUpCredentials email={email} />
     </>
   );
 };

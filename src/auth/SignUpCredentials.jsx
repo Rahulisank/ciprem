@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { EyeIcon, EyeOff, X } from "lucide-react";
+import { useSignUpMutation } from "@/redux/api";
 
 // Import UI components
 import {
@@ -21,16 +22,22 @@ import { closeModal, updateModalState } from "@/redux/slices/ModalSlice";
 import FormInput from "../components/input/FormInput";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signUpSchema } from "@/validation/auth";
+import { useToast } from "@/hooks/use-toast";
+import { ButtonLoader } from "@/components/loader/ButtonLoader";
 
-const SignUpCredentials = () => {
+const SignUpCredentials = (props) => {
   // State to manage password and confirm password visibility
   const [passwordVisibile, setPasswordVisible] = useState({
     password: false,
     confirmPassword: false,
   });
 
+  const { toast } = useToast();
+
   // Access the auth dialog state from the Redux store
   const authDialogState = useSelector((state) => state.ModalSlice);
+
+  const [signUp, { isLoading, isError }] = useSignUpMutation();
 
   // Redux dispatch function to dispatch actions
   const dispatch = useDispatch();
@@ -46,8 +53,27 @@ const SignUpCredentials = () => {
   });
 
   // Handle form submission
-  const onSubmit = (data) => {
-    console.log(data);
+  const onSubmit = async (data) => {
+    const response = await signUp({
+      name: data?.username,
+      email: props?.email,
+      password: data?.password,
+    });
+    if (response?.data?.success) {
+      toast({
+        title: response?.data?.message,
+      });
+      dispatch(updateModalState("openLoginModal"));
+      form.reset();
+    }
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: response?.error?.data?.message
+          ? response?.error?.data?.message
+          : "Something went wrong! Please try again later",
+      });
+    }
   };
 
   return (
@@ -128,8 +154,17 @@ const SignUpCredentials = () => {
               </div>
             </div>
             {/* Submit button */}
-            <button className="mt-5 w-full rounded-full bg-shiny-blue p-3 text-sm font-semibold text-dark-slate hover:bg-[#21ffdb] md:mt-6 md:text-base xl:mt-7 3xl:mt-8 3xl:text-lg">
-              Create Account
+            <button
+              disabled={isLoading}
+              className="mt-5 w-full rounded-full bg-shiny-blue p-3 text-sm font-semibold text-dark-slate hover:bg-[#21ffdb] md:mt-6 md:text-base xl:mt-7 3xl:mt-8 3xl:text-lg"
+            >
+              {isLoading ? (
+                <div className="flex justify-center">
+                  <ButtonLoader />
+                </div>
+              ) : (
+                "Create Account"
+              )}
             </button>
           </form>
         </Form>

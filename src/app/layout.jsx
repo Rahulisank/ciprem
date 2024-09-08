@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header, TopLoader } from "@/components";
 import ReduxProvider from "./ReduxProvider";
 import MobileNavigation from "@/components/header/MobileNavigation";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,6 +19,7 @@ export default function RootLayout({ children }) {
         <ReduxProvider>
           <Header />
           <TopLoader />
+          <Toaster />
           <div className="block xl:hidden">
             <MobileNavigation />
           </div>
