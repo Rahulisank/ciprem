@@ -321,22 +321,31 @@ router.post("/deletegroup", (req, res) => {
 
 
 
+
 router.post("/singlegroup", (req, res) => {
   // Get base URL from environment variables
   const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
 
-  // Extract the group ID from the request body
-  const { id } = req.body;
+  // Extract the group ID and user ID from the request body
+  const { id, userid } = req.body;
 
-  // Validate the ID
+  // Validate the ID and user ID
   if (!id) {
     return res.status(400).json({ success: false, message: "Group ID is required" });
   }
+  // if (!userid) {
+  //   return res.status(400).json({ success: false, message: "User ID is required" });
+  // }
 
-  // Query to retrieve a single group by its ID
-  const selectQuery = "SELECT * FROM `groups` WHERE id = ?";
+  // Query to retrieve a single group by its ID and optionally check if the userid matches
+  const selectQuery = `
+    SELECT g.*, j.joinedon
+    FROM \`groups\` g
+    LEFT JOIN joined_groups j ON g.id = j.groupid AND j.userid = ?
+    WHERE g.id = ?
+  `;
 
-  db.query(selectQuery, [id], (err, results) => {
+  db.query(selectQuery, [userid, id], (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ success: false, message: "Database error" });
@@ -351,8 +360,13 @@ router.post("/singlegroup", (req, res) => {
     const group = results[0];
 
     // Update the groupimage field with the full URL
-  
     group.groupimage = group.groupimage ? `${baseUrl}${group.groupimage}` : '';
+
+    // Only include `joinedon` if `userid` is a member of the group
+    if (group.joinedon === null) {
+      delete group.joinedon;
+    }
+
     res.json({
       success: true,
       group: group,
