@@ -786,7 +786,65 @@ router.post("/deletepost", (req, res) => {
   });
 });
 
+router.post("/myposts", (req, res) => {
+  // Extract user ID from the request body
+  const { userid } = req.body;
 
+  // Validate user ID
+  if (!userid) {
+    return res.status(400).json({ success: false, message: "User ID is required" });
+  }
+
+  // Get base URL from environment variables
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
+  // Query to retrieve posts where the user ID matches
+  const selectQuery = "SELECT * FROM `posts` WHERE `userid` = ?";
+
+  db.query(selectQuery, [userid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    // Map over results to update the image field with the full URL
+    const updatedResults = results.map(post => ({
+      ...post,
+      image: post.image ? `${baseUrl}${post.image}` : ''
+    }));
+
+    res.json({
+      success: true,
+      posts: updatedResults,
+    });
+  });
+});
+
+router.post("/trendingpost", (req, res) => {
+  // Get base URL from environment variables
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
+  // Query to retrieve a random selection of rows from the database
+  const selectQuery = "SELECT * FROM `posts` ORDER BY RAND() LIMIT 10";
+
+  db.query(selectQuery, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    // Map over results to update the image field with the full URL
+    const updatedResults = results.map(post => ({
+      ...post,
+      image: post.image ? `${baseUrl}${post.image}` : '' // Ensure `post.image` is correctly handled
+    }));
+
+    res.json({
+      success: true,
+      posts: updatedResults,
+    });
+  });
+});
 
 
 module.exports = router;
