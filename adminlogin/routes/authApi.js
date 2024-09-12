@@ -653,11 +653,12 @@ router.post("/allpost", (req, res) => {
 });
 
 
+
 router.post("/addpost", upload.single("image"), (req, res) => {
   const { groupid, userid, title, description, tags, matured } = req.body; 
 
   // Validate input
-  if (!groupid || !userid || !title || !description) {
+  if (!groupid || !userid || !title || !description || matured === undefined) {
     return res.status(400).json({
       success: false,
       message: "groupid, userid, title, description, and matured fields are required",
@@ -687,7 +688,7 @@ router.post("/addpost", upload.single("image"), (req, res) => {
     (err, result) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ success: false, message: err});
+        return res.status(500).json({ success: false, message: err.message });
       }
       res.json({
         success: true,
@@ -697,6 +698,7 @@ router.post("/addpost", upload.single("image"), (req, res) => {
     }
   );
 });
+
 
 
 
