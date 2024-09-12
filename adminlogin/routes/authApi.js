@@ -655,7 +655,7 @@ router.post("/allpost", (req, res) => {
 
 router.post("/addpost", upload.single("image"), (req, res) => {
   const { groupid, userid, title, description, tags, matured } = req.body; 
-console.table(req.body);
+
   // Validate input
   if (!groupid || !userid || !title || !description) {
     return res.status(400).json({
@@ -687,7 +687,7 @@ console.table(req.body);
     (err, result) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ success: false, message: err});
+        return res.status(500).json({ success: false, message: "Database error" });
       }
       res.json({
         success: true,
