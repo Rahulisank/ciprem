@@ -657,7 +657,7 @@ router.post("/addpost", upload.single("image"), (req, res) => {
   const { groupid, userid, title, description, tags, matured } = req.body; 
 
   // Validate input
-  if (!groupid || !userid || !title || !description) {
+  if (!groupid || !userid || !title || !description|| !matured) {
     return res.status(400).json({
       success: false,
       message: "groupid, userid, title, description, and matured fields are required",
@@ -717,7 +717,8 @@ router.post("/updatepost", upload.single("image"), (req, res) => {
   const image = req.file ? req.file.filename : null;
 
   // Format tags as a comma-separated string
-  const tagsString = tags ? tags.split(',').map(tag => tag.trim()).join(',') : null;
+  const tagsArray = Array.isArray(tags) ? tags.map(tag => tag.trim()) : [];
+  const tagsString = tagsArray.length > 0 ? tagsArray.join(',') : null;
 
   // Update query
   const updateQuery = `
