@@ -687,7 +687,7 @@ router.post("/addpost", upload.single("image"), (req, res) => {
     (err, result) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ success: false, message: "Database error" });
+        return res.status(500).json({ success: false, message: err});
       }
       res.json({
         success: true,
