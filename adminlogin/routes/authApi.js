@@ -626,12 +626,21 @@ router.post("/singlepost", (req, res) => {
 });
 
 
+
+
 router.post("/allpost", (req, res) => {
   // Get base URL from environment variables
   const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
 
-  // Query to retrieve all groups from the database
-  const selectQuery = "SELECT * FROM `posts`";
+  // SQL query to retrieve all posts and join with groups to get groupname and groupimage
+  const selectQuery = `
+    SELECT 
+      p.*, 
+      g.groupname, 
+      g.groupimage
+    FROM posts p
+    JOIN groups g ON p.groupid = g.id
+  `;
 
   db.query(selectQuery, (err, results) => {
     if (err) {
@@ -639,11 +648,13 @@ router.post("/allpost", (req, res) => {
       return res.status(500).json({ success: false, message: "Database error" });
     }
 
-  // Map over results to update the image field with the full URL
-  const updatedResults = results.map(post => ({
-    ...post,
-    image: post.image ? `${baseUrl}${post.image}` : '' // Ensure `post.image` is correctly handled
-  }));
+    // Map over results to update the image field with the full URL
+    const updatedResults = results.map(post => ({
+      ...post,
+      image: post.image ? `${baseUrl}${post.image}` : '', // Ensure `post.image` is correctly handled
+      groupname: post.groupname,
+      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : ''
+    }));
 
     res.json({
       success: true,
@@ -651,6 +662,8 @@ router.post("/allpost", (req, res) => {
     });
   });
 });
+
+
 
 
 router.post("/addpost", upload.single("image"), (req, res) => {
@@ -799,8 +812,16 @@ router.post("/myposts", (req, res) => {
   // Get base URL from environment variables
   const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
 
-  // Query to retrieve posts where the user ID matches
-  const selectQuery = "SELECT * FROM `posts` WHERE `userid` = ?";
+  // SQL query to retrieve posts and join with groups to get groupname and groupimage
+  const selectQuery = `
+    SELECT 
+      p.*, 
+      g.groupname, 
+      g.groupimage
+    FROM posts p
+    JOIN groups g ON p.groupid = g.id
+    WHERE p.userid = ?
+  `;
 
   db.query(selectQuery, [userid], (err, results) => {
     if (err) {
@@ -811,7 +832,9 @@ router.post("/myposts", (req, res) => {
     // Map over results to update the image field with the full URL
     const updatedResults = results.map(post => ({
       ...post,
-      image: post.image ? `${baseUrl}${post.image}` : ''
+      image: post.image ? `${baseUrl}${post.image}` : '',
+      groupname: post.groupname,
+      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : ''
     }));
 
     res.json({
@@ -821,12 +844,22 @@ router.post("/myposts", (req, res) => {
   });
 });
 
+
 router.post("/trendingpost", (req, res) => {
   // Get base URL from environment variables
   const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
 
-  // Query to retrieve a random selection of rows from the database
-  const selectQuery = "SELECT * FROM `posts` ORDER BY RAND() LIMIT 10";
+  // SQL query to retrieve a random selection of posts and join with groups to get groupname and groupimage
+  const selectQuery = `
+    SELECT 
+      p.*, 
+      g.groupname, 
+      g.groupimage
+    FROM posts p
+    JOIN groups g ON p.groupid = g.id
+    ORDER BY RAND() 
+    LIMIT 10
+  `;
 
   db.query(selectQuery, (err, results) => {
     if (err) {
@@ -837,7 +870,9 @@ router.post("/trendingpost", (req, res) => {
     // Map over results to update the image field with the full URL
     const updatedResults = results.map(post => ({
       ...post,
-      image: post.image ? `${baseUrl}${post.image}` : '' // Ensure `post.image` is correctly handled
+      image: post.image ? `${baseUrl}${post.image}` : '', // Ensure `post.image` is correctly handled
+      groupname: post.groupname,
+      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : ''
     }));
 
     res.json({
@@ -846,6 +881,7 @@ router.post("/trendingpost", (req, res) => {
     });
   });
 });
+
 
 
 module.exports = router;
