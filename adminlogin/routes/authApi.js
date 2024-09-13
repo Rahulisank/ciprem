@@ -587,19 +587,27 @@ router.post("/leavegroup", (req, res) => {
 
 
 router.post("/singlepost", (req, res) => {
-  // Get base URL from environment variables
-  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
-
-  // Extract the post ID from the request body
+  // Extract post ID from the request body
   const { id } = req.body;
 
-  // Validate the ID
+  // Validate post ID
   if (!id) {
     return res.status(400).json({ success: false, message: "Post ID is required" });
   }
 
-  // Query to retrieve a single post by its ID
-  const selectQuery = "SELECT * FROM `posts` WHERE id = ?";
+  // Get base URL from environment variables
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
+
+  // SQL query to retrieve a single post and join with groups to get groupname and groupimage
+  const selectQuery = `
+    SELECT 
+      p.*, 
+      g.groupname, 
+      g.groupimage
+    FROM posts p
+    JOIN \`groups\` g ON p.groupid = g.id
+    WHERE p.id = ?
+  `;
 
   db.query(selectQuery, [id], (err, results) => {
     if (err) {
@@ -607,23 +615,28 @@ router.post("/singlepost", (req, res) => {
       return res.status(500).json({ success: false, message: "Database error" });
     }
 
-    // Check if the post was found
+    // Check if post was found
     if (results.length === 0) {
       return res.status(404).json({ success: false, message: "Post not found" });
     }
 
-    // Assuming results[0] is the post object
+    // Map over results to update the image field with the full URL
     const post = results[0];
-
-    // Update the image field with the full URL 
-    post.image = post.image ? `${baseUrl}${post.image}` : '';
+    const updatedPost = {
+      ...post,
+      image: post.image ? `${baseUrl}${post.image}` : '',
+      groupname: post.groupname,
+      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : ''
+    };
 
     res.json({
       success: true,
-      post: post,
+      post: updatedPost,
     });
   });
 });
+
+
 
 
 
