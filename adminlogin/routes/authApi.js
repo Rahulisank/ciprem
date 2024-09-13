@@ -639,7 +639,7 @@ router.post("/allpost", (req, res) => {
       g.groupname, 
       g.groupimage
     FROM posts p
-    JOIN groups g ON p.groupid = g.id
+    JOIN \`groups\` g ON p.groupid = g.id
   `;
 
   db.query(selectQuery, (err, results) => {
@@ -819,7 +819,7 @@ router.post("/myposts", (req, res) => {
       g.groupname, 
       g.groupimage
     FROM posts p
-    JOIN groups g ON p.groupid = g.id
+    JOIN \`groups\` g ON p.groupid = g.id
     WHERE p.userid = ?
   `;
 
@@ -856,7 +856,7 @@ router.post("/trendingpost", (req, res) => {
       g.groupname, 
       g.groupimage
     FROM posts p
-    JOIN groups g ON p.groupid = g.id
+    JOIN \`groups\` g ON p.groupid = g.id
     ORDER BY RAND() 
     LIMIT 10
   `;
