@@ -598,15 +598,31 @@ router.post("/singlepost", (req, res) => {
   // Get base URL from environment variables
   const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
 
-  // SQL query to retrieve a single post and join with groups to get groupname and groupimage
+  // SQL query to retrieve a single post and join with groups to get groupname, groupimage, likes, and dislikes
   const selectQuery = `
     SELECT 
-      p.*, 
-      g.groupname, 
-      g.groupimage
+      p.id AS post_id,
+      p.groupid,
+      p.userid AS post_userid,
+      p.title,
+      p.description,
+      p.image,
+      p.tags,
+      p.matured,
+      p.created_at,
+      p.updated_at,
+      g.groupname,
+      g.groupimage,
+      -- Aggregate likes
+      COALESCE(GROUP_CONCAT(DISTINCT l.userid), '') AS likedby,
+      -- Aggregate dislikes
+      COALESCE(GROUP_CONCAT(DISTINCT d.userid), '') AS dislikedby
     FROM posts p
     JOIN \`groups\` g ON p.groupid = g.id
+    LEFT JOIN \`like_post\` l ON p.id = l.postid
+    LEFT JOIN \`dislike_post\` d ON p.id = d.postid
     WHERE p.id = ?
+    GROUP BY p.id, g.groupname, g.groupimage
   `;
 
   db.query(selectQuery, [id], (err, results) => {
@@ -620,13 +636,23 @@ router.post("/singlepost", (req, res) => {
       return res.status(404).json({ success: false, message: "Post not found" });
     }
 
-    // Map over results to update the image field with the full URL
+    // Map over results to format the response
     const post = results[0];
     const updatedPost = {
-      ...post,
+      id: post.post_id,
+      groupid: post.groupid,
+      userid: post.post_userid,
+      title: post.title,
+      description: post.description,
       image: post.image ? `${baseUrl}${post.image}` : '',
+      tags: post.tags,
+      matured: post.matured,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
       groupname: post.groupname,
-      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : ''
+      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : '',
+      likedby: post.likedby ? post.likedby.split(',') : [],  // Convert comma-separated string to array
+      dislikedby: post.dislikedby ? post.dislikedby.split(',') : []  // Convert comma-separated string to array
     };
 
     res.json({
@@ -639,20 +665,34 @@ router.post("/singlepost", (req, res) => {
 
 
 
-
-
 router.post("/allpost", (req, res) => {
   // Get base URL from environment variables
   const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
 
-  // SQL query to retrieve all posts and join with groups to get groupname and groupimage
+  // SQL query to retrieve all posts, join with groups, and get likes and dislikes
   const selectQuery = `
     SELECT 
-      p.*, 
-      g.groupname, 
-      g.groupimage
+      p.id AS post_id,
+      p.groupid,
+      p.userid AS post_userid,
+      p.title,
+      p.description,
+      p.image,
+      p.tags,
+      p.matured,
+      p.created_at,
+      p.updated_at,
+      g.groupname,
+      g.groupimage,
+      -- Aggregate likes
+      COALESCE(GROUP_CONCAT(DISTINCT l.userid), '') AS likedby,
+      -- Aggregate dislikes
+      COALESCE(GROUP_CONCAT(DISTINCT d.userid), '') AS dislikedby
     FROM posts p
     JOIN \`groups\` g ON p.groupid = g.id
+    LEFT JOIN \`like_post\` l ON p.id = l.postid
+    LEFT JOIN \`dislike_post\` d ON p.id = d.postid
+    GROUP BY p.id, g.groupname, g.groupimage
   `;
 
   db.query(selectQuery, (err, results) => {
@@ -661,12 +701,22 @@ router.post("/allpost", (req, res) => {
       return res.status(500).json({ success: false, message: "Database error" });
     }
 
-    // Map over results to update the image field with the full URL
+    // Map over results to format the response
     const updatedResults = results.map(post => ({
-      ...post,
-      image: post.image ? `${baseUrl}${post.image}` : '', // Ensure `post.image` is correctly handled
+      id: post.post_id,
+      groupid: post.groupid,
+      userid: post.post_userid,
+      title: post.title,
+      description: post.description,
+      image: post.image ? `${baseUrl}${post.image}` : '',
+      tags: post.tags,
+      matured: post.matured,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
       groupname: post.groupname,
-      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : ''
+      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : '',
+      likedby: post.likedby ? post.likedby.split(',') : [],  // Convert comma-separated string to array
+      dislikedby: post.dislikedby ? post.dislikedby.split(',') : []  // Convert comma-separated string to array
     }));
 
     res.json({
@@ -813,6 +863,7 @@ router.post("/deletepost", (req, res) => {
   });
 });
 
+
 router.post("/myposts", (req, res) => {
   // Extract user ID from the request body
   const { userid } = req.body;
@@ -825,15 +876,31 @@ router.post("/myposts", (req, res) => {
   // Get base URL from environment variables
   const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
 
-  // SQL query to retrieve posts and join with groups to get groupname and groupimage
+  // SQL query to retrieve posts, join with groups, and get likes and dislikes
   const selectQuery = `
     SELECT 
-      p.*, 
-      g.groupname, 
-      g.groupimage
+      p.id AS post_id,
+      p.groupid,
+      p.userid AS post_userid,
+      p.title,
+      p.description,
+      p.image,
+      p.tags,
+      p.matured,
+      p.created_at,
+      p.updated_at,
+      g.groupname,
+      g.groupimage,
+      -- Aggregate likes
+      COALESCE(GROUP_CONCAT(DISTINCT l.userid), '') AS likedby,
+      -- Aggregate dislikes
+      COALESCE(GROUP_CONCAT(DISTINCT d.userid), '') AS dislikedby
     FROM posts p
     JOIN \`groups\` g ON p.groupid = g.id
+    LEFT JOIN \`like_post\` l ON p.id = l.postid
+    LEFT JOIN \`dislike_post\` d ON p.id = d.postid
     WHERE p.userid = ?
+    GROUP BY p.id, g.groupname, g.groupimage
   `;
 
   db.query(selectQuery, [userid], (err, results) => {
@@ -842,12 +909,22 @@ router.post("/myposts", (req, res) => {
       return res.status(500).json({ success: false, message: "Database error" });
     }
 
-    // Map over results to update the image field with the full URL
+    // Map over results to format the response
     const updatedResults = results.map(post => ({
-      ...post,
+      id: post.post_id,
+      groupid: post.groupid,
+      userid: post.post_userid,
+      title: post.title,
+      description: post.description,
       image: post.image ? `${baseUrl}${post.image}` : '',
+      tags: post.tags,
+      matured: post.matured,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
       groupname: post.groupname,
-      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : ''
+      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : '',
+      likedby: post.likedby ? post.likedby.split(',') : [],  // Convert comma-separated string to array
+      dislikedby: post.dislikedby ? post.dislikedby.split(',') : []  // Convert comma-separated string to array
     }));
 
     res.json({
@@ -858,18 +935,35 @@ router.post("/myposts", (req, res) => {
 });
 
 
+
 router.post("/trendingpost", (req, res) => {
   // Get base URL from environment variables
   const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/`;
 
-  // SQL query to retrieve a random selection of posts and join with groups to get groupname and groupimage
+  // SQL query to retrieve a random selection of posts, join with groups, and get likes and dislikes
   const selectQuery = `
     SELECT 
-      p.*, 
-      g.groupname, 
-      g.groupimage
+      p.id AS post_id,
+      p.groupid,
+      p.userid AS post_userid,
+      p.title,
+      p.description,
+      p.image,
+      p.tags,
+      p.matured,
+      p.created_at,
+      p.updated_at,
+      g.groupname,
+      g.groupimage,
+      -- Aggregate likes
+      COALESCE(GROUP_CONCAT(DISTINCT l.userid), '') AS likedby,
+      -- Aggregate dislikes
+      COALESCE(GROUP_CONCAT(DISTINCT d.userid), '') AS dislikedby
     FROM posts p
     JOIN \`groups\` g ON p.groupid = g.id
+    LEFT JOIN \`like_post\` l ON p.id = l.postid
+    LEFT JOIN \`dislike_post\` d ON p.id = d.postid 
+    GROUP BY p.id, g.groupname, g.groupimage
     ORDER BY RAND() 
     LIMIT 10
   `;
@@ -880,12 +974,22 @@ router.post("/trendingpost", (req, res) => {
       return res.status(500).json({ success: false, message: "Database error" });
     }
 
-    // Map over results to update the image field with the full URL
+    // Map over results to format the response
     const updatedResults = results.map(post => ({
-      ...post,
-      image: post.image ? `${baseUrl}${post.image}` : '', // Ensure `post.image` is correctly handled
+      id: post.post_id,
+      groupid: post.groupid,
+      userid: post.post_userid,
+      title: post.title,
+      description: post.description,
+      image: post.image ? `${baseUrl}${post.image}` : '',
+      tags: post.tags,
+      matured: post.matured,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
       groupname: post.groupname,
-      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : ''
+      groupimage: post.groupimage ? `${baseUrl}${post.groupimage}` : '',
+      likedby: post.likedby ? post.likedby.split(',') : [],  // Convert comma-separated string to array
+      dislikedby: post.dislikedby ? post.dislikedby.split(',') : []  // Convert comma-separated string to array
     }));
 
     res.json({
@@ -929,25 +1033,39 @@ router.post("/likepost", (req, res) => {
     }
 
     if (results.length > 0) {
-      return res.status(400).json({ success: false, message: "Post already liked" });
+      // If already liked, remove the like
+      const deleteLikeQuery = `
+        DELETE FROM \`like_post\` 
+        WHERE userid = ? AND postid = ?
+      `;
+
+      db.query(deleteLikeQuery, [userid, postid], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ success: false, message: "Database error" });
+        }
+
+        return res.json({ success: true, message: "Like removed successfully" });
+      });
+    } else {
+      // Insert new like into the like_post table
+      const insertLikeQuery = `
+        INSERT INTO \`like_post\` (userid, postid, created_at) 
+        VALUES (?,?, NOW())
+      `;
+
+      db.query(insertLikeQuery, [userid, postid], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ success: false, message: "Database error" });
+        }
+
+        res.json({ success: true, message: "Post liked successfully" });
+      });
     }
-
-    // Insert new like into the like_post table
-    const insertLikeQuery = `
-      INSERT INTO \`like_post\` (userid, postid, created_at) 
-      VALUES (?,?, NOW())
-    `;
-
-    db.query(insertLikeQuery, [userid, postid], (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ success: false, message: "Database error" });
-      }
-
-      res.json({ success: true, message: "Post liked successfully" });
-    });
   });
 });
+
 
 
 
@@ -975,25 +1093,41 @@ router.post("/dislikepost", (req, res) => {
     }
 
     if (results.length > 0) {
-      return res.status(400).json({ success: false, message: "Post already disliked" });
+      // If already disliked, remove the dislike
+      const deleteDislikeQuery = `
+        DELETE FROM \`dislike_post\` 
+        WHERE userid = ? AND postid = ?
+      `;
+
+      db.query(deleteDislikeQuery, [userid, postid], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ success: false, message: "Database error" });
+        }
+
+        return res.json({ success: true, message: "Dislike removed successfully" });
+      });
+    } else {
+      // Insert new dislike into the dislike_post table
+      const insertDislikeQuery = `
+        INSERT INTO \`dislike_post\` (userid, postid, created_at) 
+        VALUES (?,?, NOW())
+      `;
+
+      db.query(insertDislikeQuery, [userid, postid], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ success: false, message: "Database error" });
+        }
+
+        res.json({ success: true, message: "Post disliked successfully" });
+      });
     }
-
-    // Insert new dislike into the dislike_post table
-    const insertDislikeQuery = `
-      INSERT INTO \`dislike_post\` (userid, postid, created_at) 
-      VALUES (?,?, NOW())
-    `;
-
-    db.query(insertDislikeQuery, [userid, postid], (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ success: false, message: "Database error" });
-      }
-
-      res.json({ success: true, message: "Post disliked successfully" });
-    });
   });
 });
+
+
+
 
 
 
