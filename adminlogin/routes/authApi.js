@@ -897,4 +897,213 @@ router.post("/trendingpost", (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+// Route to like a post
+router.post("/likepost", (req, res) => {
+  const { userid, postid } = req.body;
+
+  if (!userid || !postid) {
+    return res.status(400).json({ success: false, message: "User ID and Post ID are required" });
+  }
+
+  // Check if the user has already liked the post
+  const checkLikeQuery = `
+    SELECT * FROM \`like_post\` 
+    WHERE userid = ? AND postid = ?
+  `;
+
+  db.query(checkLikeQuery, [userid, postid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    if (results.length > 0) {
+      return res.status(400).json({ success: false, message: "Post already liked" });
+    }
+
+    // Insert new like into the like_post table
+    const insertLikeQuery = `
+      INSERT INTO \`like_post\` (userid, postid, created_at) 
+      VALUES (?,?, NOW())
+    `;
+
+    db.query(insertLikeQuery, [userid, postid], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, message: "Database error" });
+      }
+
+      res.json({ success: true, message: "Post liked successfully" });
+    });
+  });
+});
+
+
+
+
+
+
+// Route to dislike a post
+router.post("/dislikepost", (req, res) => {
+  const { userid, postid } = req.body;
+
+  if (!userid || !postid) {
+    return res.status(400).json({ success: false, message: "User ID and Post ID are required" });
+  }
+
+  // Check if the user has already disliked the post
+  const checkDislikeQuery = `
+    SELECT * FROM \`dislike_post\` 
+    WHERE userid = ? AND postid = ?
+  `;
+
+  db.query(checkDislikeQuery, [userid, postid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    if (results.length > 0) {
+      return res.status(400).json({ success: false, message: "Post already disliked" });
+    }
+
+    // Insert new dislike into the dislike_post table
+    const insertDislikeQuery = `
+      INSERT INTO \`dislike_post\` (userid, postid, created_at) 
+      VALUES (?,?, NOW())
+    `;
+
+    db.query(insertDislikeQuery, [userid, postid], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, message: "Database error" });
+      }
+
+      res.json({ success: true, message: "Post disliked successfully" });
+    });
+  });
+});
+
+
+
+
+// Route to add a comment with an optional image
+router.post("/addcomment", upload.single('image'), (req, res) => {
+  const { userid, postid, comment } = req.body;
+  const image = req.image ? req.image.filename : null; // Get filename from uploaded file
+
+  if (!userid || !postid || !comment) {
+    return res.status(400).json({ success: false, message: "User ID, Post ID, and Comment are required" });
+  }
+
+  // Insert new comment into the post_comments table
+  const insertCommentQuery = `
+    INSERT INTO \`post_comments\` (userid, postid, comment, image, created_at, updated_at) 
+    VALUES (?, ?, ?, ?, NOW(), NOW())
+  `;
+
+  db.query(insertCommentQuery, [userid, postid, comment, image], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    } 
+
+    res.json({ success: true, message: "Comment added successfully" });
+  });
+});
+
+
+
+
+
+
+// Route to get comments for a specific post
+router.post("/comments", (req, res) => {
+  const { postid } = req.body;
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/comments/`;
+
+  if (!postid) {
+    return res.status(400).json({ success: false, message: "Post ID is required" });
+  }
+
+  // Query to retrieve comments for the specified post
+  const selectCommentsQuery = `
+    SELECT id, userid, postid, comment, image, created_at, updated_at 
+    FROM \`post_comments\` 
+    WHERE postid = ?
+  `;
+
+  db.query(selectCommentsQuery, [postid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    // Map over results to update image field with the full URL
+    const updatedResults = results.map(comment => ({
+      ...comment,
+      image: comment.image ? `${baseUrl}${comment.image}` : null
+    }));
+
+    res.json({
+      success: true,
+      comments: updatedResults,
+    });
+  });
+});
+
+
+
+
+
+
+
+
+
+// Route to get comments for a specific post
+router.post("/singlecomment", (req, res) => {
+  const { commentid } = req.body;
+  const baseUrl = `${process.env.URL}:${process.env.PORT}/uploads/comments/`;
+
+  if (!commentid) {
+    return res.status(400).json({ success: false, message: "Commentid is required" });
+  }
+
+  // Query to retrieve comments for the specified post
+  const selectCommentsQuery = `
+    SELECT id, userid, postid, comment, image, created_at, updated_at 
+    FROM \`post_comments\` 
+    WHERE id = ?
+  `;
+
+  db.query(selectCommentsQuery, [commentid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    // Map over results to update image field with the full URL
+    const updatedResults = results.map(comment => ({
+      ...comment,
+      image: comment.image ? `${baseUrl}${comment.image}` : null
+    }));
+
+    res.json({
+      success: true,
+      comments: updatedResults,
+    });
+  });
+});
+
 module.exports = router;
