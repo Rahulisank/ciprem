@@ -12,7 +12,7 @@ const app = express();
 // Use environment variables for URL and PORT
 const PORT = process.env.PORT || 4000;
 const URL = process.env.URL;
-
+  
 
 // Set up middleware
 // Allow all origins (or specify certain origins)
