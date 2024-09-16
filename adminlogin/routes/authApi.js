@@ -963,8 +963,7 @@ router.post("/trendingpost", (req, res) => {
     JOIN \`groups\` g ON p.groupid = g.id
     LEFT JOIN \`like_post\` l ON p.id = l.postid
     LEFT JOIN \`dislike_post\` d ON p.id = d.postid 
-    GROUP BY p.id, g.groupname, g.groupimage
-    ORDER BY RAND() 
+    GROUP BY p.id, g.groupname, g.groupimage 
     LIMIT 10
   `;
 
