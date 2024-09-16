@@ -1278,4 +1278,199 @@ router.post("/singlecomment", (req, res) => {
   });
 });
 
+
+
+
+
+
+
+
+
+// Route to add a reply to a comment
+router.post("/add-reply", (req, res) => {
+  const { commentid, userid } = req.body;
+
+  // Validate input
+  if (!commentid || !userid) {
+    return res.status(400).json({ success: false, message: "Comment ID and User ID are required" });
+  }
+
+  // SQL query to insert a new reply
+  const insertReplyQuery = `
+    INSERT INTO comment_reply (commentid, userid, created_at)
+    VALUES (?, ?, NOW())
+  `;
+
+  // Execute the query
+  db.query(insertReplyQuery, [commentid, userid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    res.json({
+      success: true,
+      message: "Reply added successfully",
+      replyId: results.insertId  // Return the ID of the newly inserted reply
+    });
+  });
+});
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+// Route to like a comment
+router.post("/like-comment", (req, res) => {
+  const { userid, commentid } = req.body;
+
+  if (!userid || !commentid) {
+    return res.status(400).json({ success: false, message: "User ID and Comment ID are required" });
+  }
+
+  // Check if the user has already liked the comment
+  const checkLikeQuery = `
+    SELECT * FROM comment_likes 
+    WHERE userid = ? AND commentid = ?
+  `;
+
+  db.query(checkLikeQuery, [userid, commentid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    if (results.length > 0) {
+      // If already liked, remove the like
+      const deleteLikeQuery = `
+        DELETE FROM comment_likes 
+        WHERE userid = ? AND commentid = ?
+      `;
+
+      db.query(deleteLikeQuery, [userid, commentid], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ success: false, message: "Database error" });
+        }
+
+        return res.json({ success: true, message: "Like removed successfully" });
+      });
+    } else {
+      // Remove any existing dislike for the same user and comment
+      const deleteDislikeQuery = `
+        DELETE FROM comment_dislikes 
+        WHERE userid = ? AND commentid = ?
+      `;
+
+      db.query(deleteDislikeQuery, [userid, commentid], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ success: false, message: "Database error" });
+        }
+
+        // Insert new like into the comment_likes table
+        const insertLikeQuery = `
+          INSERT INTO comment_likes (userid, commentid, created_at) 
+          VALUES (?, ?, NOW())
+        `;
+
+        db.query(insertLikeQuery, [userid, commentid], (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: "Database error" });
+          }
+
+          res.json({ success: true, message: "Comment liked successfully" });
+        });
+      });
+    }
+  });
+});
+
+
+
+
+
+// Route to dislike a comment
+router.post("/dislike-comment", (req, res) => {
+  const { userid, commentid } = req.body;
+
+  if (!userid || !commentid) {
+    return res.status(400).json({ success: false, message: "User ID and Comment ID are required" });
+  }
+
+  // Check if the user has already disliked the comment
+  const checkDislikeQuery = `
+    SELECT * FROM comment_dislikes 
+    WHERE userid = ? AND commentid = ?
+  `;
+
+  db.query(checkDislikeQuery, [userid, commentid], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    if (results.length > 0) {
+      // If already disliked, remove the dislike
+      const deleteDislikeQuery = `
+        DELETE FROM comment_dislikes 
+        WHERE userid = ? AND commentid = ?
+      `;
+
+      db.query(deleteDislikeQuery, [userid, commentid], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ success: false, message: "Database error" });
+        }
+
+        return res.json({ success: true, message: "Dislike removed successfully" });
+      });
+    } else {
+      // Remove any existing like for the same user and comment
+      const deleteLikeQuery = `
+        DELETE FROM comment_likes 
+        WHERE userid = ? AND commentid = ?
+      `;
+
+      db.query(deleteLikeQuery, [userid, commentid], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ success: false, message: "Database error" });
+        }
+
+        // Insert new dislike into the comment_dislikes table
+        const insertDislikeQuery = `
+          INSERT INTO comment_dislikes (userid, commentid, created_at) 
+          VALUES (?, ?, NOW())
+        `;
+
+        db.query(insertDislikeQuery, [userid, commentid], (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: "Database error" });
+          }
+
+          res.json({ success: true, message: "Comment disliked successfully" });
+        });
+      });
+    }
+  });
+});
+
+
+
+
+
 module.exports = router;
