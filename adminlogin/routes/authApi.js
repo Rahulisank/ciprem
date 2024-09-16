@@ -1048,23 +1048,38 @@ router.post("/likepost", (req, res) => {
         return res.json({ success: true, message: "Like removed successfully" });
       });
     } else {
-      // Insert new like into the like_post table
-      const insertLikeQuery = `
-        INSERT INTO \`like_post\` (userid, postid, created_at) 
-        VALUES (?,?, NOW())
+      // Remove any existing dislike for the same user and post
+      const deleteDislikeQuery = `
+        DELETE FROM \`dislike_post\` 
+        WHERE userid = ? AND postid = ?
       `;
 
-      db.query(insertLikeQuery, [userid, postid], (err) => {
+      db.query(deleteDislikeQuery, [userid, postid], (err) => {
         if (err) {
           console.error(err);
           return res.status(500).json({ success: false, message: "Database error" });
         }
 
-        res.json({ success: true, message: "Post liked successfully" });
+        // Insert new like into the like_post table
+        const insertLikeQuery = `
+          INSERT INTO \`like_post\` (userid, postid, created_at) 
+          VALUES (?,?, NOW())
+        `;
+
+        db.query(insertLikeQuery, [userid, postid], (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: "Database error" });
+          }
+
+          res.json({ success: true, message: "Post liked successfully" });
+        });
       });
     }
   });
 });
+
+
 
 
 
@@ -1108,23 +1123,38 @@ router.post("/dislikepost", (req, res) => {
         return res.json({ success: true, message: "Dislike removed successfully" });
       });
     } else {
-      // Insert new dislike into the dislike_post table
-      const insertDislikeQuery = `
-        INSERT INTO \`dislike_post\` (userid, postid, created_at) 
-        VALUES (?,?, NOW())
+      // Remove any existing like for the same user and post
+      const deleteLikeQuery = `
+        DELETE FROM \`like_post\` 
+        WHERE userid = ? AND postid = ?
       `;
 
-      db.query(insertDislikeQuery, [userid, postid], (err) => {
+      db.query(deleteLikeQuery, [userid, postid], (err) => {
         if (err) {
           console.error(err);
           return res.status(500).json({ success: false, message: "Database error" });
         }
 
-        res.json({ success: true, message: "Post disliked successfully" });
+        // Insert new dislike into the dislike_post table
+        const insertDislikeQuery = `
+          INSERT INTO \`dislike_post\` (userid, postid, created_at) 
+          VALUES (?,?, NOW())
+        `;
+
+        db.query(insertDislikeQuery, [userid, postid], (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: "Database error" });
+          }
+
+          res.json({ success: true, message: "Post disliked successfully" });
+        });
       });
     }
   });
 });
+
+
 
 
 
@@ -1161,7 +1191,6 @@ router.post("/addcomment", upload.single('image'), (req, res) => {
 
 
 
-
 // Route to get comments for a specific post
 router.post("/comments", (req, res) => {
   const { postid } = req.body;
@@ -1171,11 +1200,21 @@ router.post("/comments", (req, res) => {
     return res.status(400).json({ success: false, message: "Post ID is required" });
   }
 
-  // Query to retrieve comments for the specified post
+  // Query to retrieve comments along with user details for the specified post
   const selectCommentsQuery = `
-    SELECT id, userid, postid, comment, image, created_at, updated_at 
-    FROM \`post_comments\` 
-    WHERE postid = ?
+    SELECT 
+      pc.id, 
+      pc.userid, 
+      pc.postid, 
+      pc.comment, 
+      pc.image, 
+      pc.created_at, 
+      pc.updated_at,
+      l.name AS username,
+      l.email
+    FROM post_comments pc
+    JOIN login l ON pc.userid = l.id
+    WHERE pc.postid = ?
   `;
 
   db.query(selectCommentsQuery, [postid], (err, results) => {
@@ -1196,7 +1235,6 @@ router.post("/comments", (req, res) => {
     });
   });
 });
-
 
 
 
