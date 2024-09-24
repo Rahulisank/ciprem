@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const passport = require("passport");
 const db = require("../config/db"); // Ensure this path is correct
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
@@ -27,6 +28,129 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists
+// Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists
+
+
+
+
+
+
+
+
+
+
+
+// API Route to trigger Google login
+router.get('/auth/google', passport.authenticate('google', {
+  scope: ['profile', 'email']
+}));
+
+
+ 
+
+
+
+
+router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/google/failure' }),
+(req, res) => {
+  const profile = req.user;
+
+  const existingUserQuery = "SELECT id, name, email FROM login WHERE email = ?";
+  
+  db.execute(existingUserQuery, [profile.emails[0].value], (err, existingUser) => {
+    if (err) {
+      console.error('Database error: ', err);
+      return res.status(500).json({ success: false, message: 'An error occurred while processing your request.' });
+    }
+
+    if (existingUser.length === 0) {
+      // Email does not exist, insert new user
+      const insertUserQuery = `
+        INSERT INTO login (name, email, google_id, google_avatar, email_verified, auth_type) 
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      db.execute(insertUserQuery, [
+        profile.displayName,
+        profile.emails[0].value,
+        profile.id,
+        profile.photos[0]?.value || null,
+        true,
+        'google'
+      ], (err, result) => {
+        if (err) {
+          console.error('Database error: ', err);
+          return res.status(500).json({ success: false, message: 'An error occurred while processing your request.' });
+        }
+
+        // Respond with user data after successful registration
+        res.status(200).json({
+          success: true,
+          message: 'User registered successfully',
+          user: {
+            id: result.insertId,
+            name: profile.displayName,
+            email: profile.emails[0].value
+          }
+        });
+      });
+    } else {
+      // Email exists, update the Google ID
+      const updateUserQuery = `
+        UPDATE login SET google_id = ?, google_avatar = ?, email_verified = ?, auth_type = ?
+        WHERE email = ?
+      `;
+      db.execute(updateUserQuery, [
+        profile.id,
+        profile.photos[0]?.value || null,
+        true,
+        'google',
+        profile.emails[0].value
+      ], (err, result) => {
+        if (err) {
+          console.error('Database error: ', err);
+          return res.status(500).json({ success: false, message: 'An error occurred while processing your request.' });
+        }
+
+        // Respond with existing user data
+        res.status(200).json({
+          success: true,
+          message: 'User logged in successfully',
+          user: {
+            id: existingUser[0].id,
+            name: existingUser[0].name,
+            email: existingUser[0].email
+          }
+        });
+      });
+    }
+  });
+}
+);
+
+
+
+
+
+
+
+// Failure route if Google login fails
+router.get('/auth/google/failure', (req, res) => {
+  return res.status(401).json({
+    success: false,
+    message: 'Google login failed'
+  });
+});
+
+
+
+
+
 
 // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists
 // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists // Check if email exists
@@ -108,7 +232,7 @@ router.post("/signup", (req, res) => {
 
           // Send verification email
           const token = crypto.randomBytes(20).toString("hex");
-          const verificationUrl = `http://192.241.147.143:4000/api/verify-email/${token}`;
+          const verificationUrl = `${process.env.URL}:${process.env.PORT}/api/verify-email/${token}`;
 
           const mailOptions = {
             from: "your-email@gmail.com",

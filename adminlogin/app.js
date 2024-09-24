@@ -3,6 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
 const bodyParser = require("body-parser");
+const passport = require('passport');  // Add Passport.js
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const path = require("path");
 const db = require("./config/db"); // Ensure this path is correct
 
@@ -16,10 +18,11 @@ const URL = process.env.URL;
 
 // Set up middleware
 // Allow all origins (or specify certain origins)
-app.use(cors());
 
+// Set up middleware
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json()); // Add this line to handle raw JSON data
+app.use(bodyParser.json());
 
 app.use(
   session({
@@ -28,6 +31,42 @@ app.use(
     saveUninitialized: true,
   })
 );
+
+
+
+
+
+
+
+
+// Use environment variables for Google client ID and secret
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+
+// Initialize Passport and configure the Google OAuth strategy
+passport.use(new GoogleStrategy({
+    clientID: GOOGLE_CLIENT_ID,
+    clientSecret: GOOGLE_CLIENT_SECRET,
+    callbackURL: `${process.env.URL}:${process.env.PORT}/api/auth/google/callback`
+  },
+  function(accessToken, refreshToken, profile, done) {
+    // Database query logic here...
+    done(null, profile);
+  }
+));
+
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+  done(null, user);
+}); 
+
+
+// Initialize Passport for authentication
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Middleware to set the current path
 app.use((req, res, next) => {
