@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Test</title>
+    <style>
+        #chat-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+        }
+        #message-input {
+            width: 70%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Chat Room</h2>
+
+    <!-- Conversation ID (for testing purposes) -->
+    <label for="conversation-id">Conversation ID:</label>
+    <input type="text" id="conversation-id" placeholder="Enter conversation ID"><br><br>
+
+    <!-- Chat Box -->
+    <div id="chat-box">
+        <p>No messages yet.</p>
+    </div>
+
+    <!-- Message Input -->
+    <input type="text" id="message-input" placeholder="Type a message">
+    <button id="send-btn">Send</button>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io('http://localhost:4000'); // Change to your Node.js server URL
+
+        const conversationIdInput = document.getElementById('conversation-id');
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Join a conversation
+        sendBtn.addEventListener('click', () => {
+            const conversationId = conversationIdInput.value;
+            const message = messageInput.value;
+
+            if (conversationId && message) {
+                const senderId = '1'; // Mock user ID for testing
+
+                // Send message event to server
+                socket.emit('send_message', {
+                    conversationId: conversationId,
+                    senderId: senderId,
+                    message: message
+                });
+
+                // Clear the input
+                messageInput.value = '';
+            }
+        });
+
+        // Join a conversation when the conversation ID is entered
+        conversationIdInput.addEventListener('input', () => {
+            const conversationId = conversationIdInput.value;
+
+            if (conversationId) {
+                socket.emit('join_conversation', {
+                    conversationId: conversationId,
+                    userId: '1' // Mock user ID for testing
+                });
+            }
+        });
+
+        // Receive messages
+        socket.on('receive_message', (message) => {
+            const newMessage = document.createElement('p');
+            newMessage.innerText = `${message.senderId}: ${message.message} (${message.timestamp})`;
+            chatBox.appendChild(newMessage);
+            chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+        });
+    </script>
+</body>
+</html>

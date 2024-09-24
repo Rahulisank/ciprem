@@ -1,5 +1,8 @@
 require('dotenv').config();
 const express = require("express");
+
+const http = require('http');
+const { socketConnection } = require('./chat'); // Import the chat module
 const cors = require("cors");
 const session = require("express-session");
 const bodyParser = require("body-parser");
@@ -7,10 +10,15 @@ const passport = require('passport');  // Add Passport.js
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const path = require("path");
 const db = require("./config/db"); // Ensure this path is correct
-
+const { Server } = require('socket.io');
 const app = express();
+const server = http.createServer(app);
 
+const io = new Server(server);
 
+io.on('connection', (socket) => {
+    socketConnection(socket); // Handle socket events
+});
 // Use environment variables for URL and PORT
 const PORT = process.env.PORT || 4000;
 const URL = process.env.URL;
@@ -85,6 +93,13 @@ app.use("/categories", require("./routes/category")); // CRUD operations for cat
 app.use("/marketplace", require("./routes/marketplace"));
 app.use("/api", require("./routes/authApi"));
 
+
+
+// Route to serve the chat page
+app.get('/chat', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'chat.html'));
+});
+
 // Error handling middleware (optional but recommended)
 app.use((req, res, next) => {
   res.status(404).send("Page Not Found"); // Handle 404 errors
@@ -94,6 +109,8 @@ app.use((err, req, res, next) => {
   console.error(err.stack); // Log the error stack
   res.status(500).send("Something went wrongdd"); // Handle other errors
 });
+
+
 
 // Start the server
 app.listen(4000, () => {
