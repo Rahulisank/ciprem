@@ -45,109 +45,91 @@ const upload = multer({ storage: storage });
 
 
 
-
-// API Route to trigger Google login
-router.get('/auth/google', passport.authenticate('google', {
-  scope: ['profile', 'email']
-}));
-
-
+ 
  
 
 
+router.post('/auth/google/callback', (req, res) => {
+  const { email, name, googleId } = req.body;
 
-
-router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/auth/google/failure' }),
-(req, res) => {
-  const profile = req.user;
-
+  // Check if email exists
   const existingUserQuery = "SELECT id, name, email FROM login WHERE email = ?";
   
-  db.execute(existingUserQuery, [profile.emails[0].value], (err, existingUser) => {
+  db.execute(existingUserQuery, [email], (err, existingUser) => {
     if (err) {
       console.error('Database error: ', err);
       return res.status(500).json({ success: false, message: 'An error occurred while processing your request.' });
     }
 
-    if (existingUser.length === 0) {
-      // Email does not exist, insert new user
-      const insertUserQuery = `
-        INSERT INTO login (name, email, google_id, google_avatar, email_verified, auth_type) 
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-      db.execute(insertUserQuery, [
-        profile.displayName,
-        profile.emails[0].value,
-        profile.id,
-        profile.photos[0]?.value || null,
-        true,
-        'google'
-      ], (err, result) => {
-        if (err) {
-          console.error('Database error: ', err);
-          return res.status(500).json({ success: false, message: 'An error occurred while processing your request.' });
-        }
-
-        // Respond with user data after successful registration
-        res.status(200).json({
-          success: true,
-          message: 'User registered successfully',
-          user: {
-            id: result.insertId,
-            name: profile.displayName,
-            email: profile.emails[0].value
-          }
-        });
+    if (existingUser.length > 0) {
+      // Email exists, respond with user data
+      return res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        userId: existingUser[0].id,
+        email: existingUser[0].email
       });
     } else {
-      // Email exists, update the Google ID
-      const updateUserQuery = `
-        UPDATE login SET google_id = ?, google_avatar = ?, email_verified = ?, auth_type = ?
-        WHERE email = ?
-      `;
-      db.execute(updateUserQuery, [
-        profile.id,
-        profile.photos[0]?.value || null,
-        true,
-        'google',
-        profile.emails[0].value
-      ], (err, result) => {
+      // Email does not exist, check if Google ID exists
+      const existingGoogleIdQuery = "SELECT id FROM login WHERE google_id = ?";
+      
+      db.execute(existingGoogleIdQuery, [googleId], (err, googleUser) => {
         if (err) {
           console.error('Database error: ', err);
           return res.status(500).json({ success: false, message: 'An error occurred while processing your request.' });
         }
 
-        // Respond with existing user data
-        res.status(200).json({
-          success: true,
-          message: 'User logged in successfully',
-          user: {
-            id: existingUser[0].id,
-            name: existingUser[0].name,
-            email: existingUser[0].email
-          }
-        });
+        if (googleUser.length > 0) {
+          // Google ID exists, update the email
+          const updateUserQuery = `
+            UPDATE login SET email = ? 
+            WHERE google_id = ?
+          `;
+          db.execute(updateUserQuery, [email, googleId], (err, result) => {
+            if (err) {
+              console.error('Database error: ', err);
+              return res.status(500).json({ success: false, message: 'An error occurred while processing your request.' });
+            }
+
+            // Respond with updated user data
+            return res.status(200).json({
+              success: true,
+              message: 'Login successful',
+              userId: googleUser[0].id,
+              email
+            });
+          });
+        } else {
+          // Neither email nor Google ID exists, insert new user
+          const insertUserQuery = `
+            INSERT INTO login (name, email, google_id, email_verified, auth_type) 
+            VALUES (?, ?, ?, ?, 'google')
+          `;
+          db.execute(insertUserQuery, [name, email, googleId, true], (err, result) => {
+            if (err) {
+              console.error('Database error: ', err);
+              return res.status(500).json({ success: false, message: 'An error occurred while processing your request.' });
+            }
+
+            // Respond with new user data
+            return res.status(201).json({
+              success: true,
+              message: 'User registered successfully',
+              userId: result.insertId,
+              email
+            });
+          });
+        }
       });
     }
-  });
-}
-);
-
-
-
-
-
-
-
-// Failure route if Google login fails
-router.get('/auth/google/failure', (req, res) => {
-  return res.status(401).json({
-    success: false,
-    message: 'Google login failed'
   });
 });
 
 
+
+
+
+ 
 
 
 

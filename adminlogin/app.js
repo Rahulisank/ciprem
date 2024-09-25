@@ -51,17 +51,7 @@ app.use(
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
-// Initialize Passport and configure the Google OAuth strategy
-passport.use(new GoogleStrategy({
-    clientID: GOOGLE_CLIENT_ID,
-    clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: `${process.env.URL}:${process.env.PORT}/api/auth/google/callback`
-  },
-  function(accessToken, refreshToken, profile, done) {
-    // Database query logic here...
-    done(null, profile);
-  }
-));
+ 
 
 passport.serializeUser((user, done) => {
   done(null, user);
